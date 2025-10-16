@@ -9,9 +9,8 @@ import { JobsProvider } from "@/hooks/use-jobs"
 import { AuthProvider } from "@/hooks/use-auth"
 
 export const metadata: Metadata = {
-  title: "Garage OS",
+  title: "Garage CRM",
   description: "Garage Repair Shop Management Dashboard",
-  generator: "v0.app",
 }
 
 export default function RootLayout({

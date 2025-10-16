@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User Model (Authentication)
+model User {
+  id          Int      @id @default(autoincrement())
+  username       String   @unique
+  name        String?
+  role        String
+  password    String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  jobs        Job[]
+  sessions    Session[]
+}
+
+// Session Model
+model Session {
+  id          String   @id @default(cuid())
+  userId      Int
+  token       String   @unique
+  userAgent   String?
+  ipAddress   String?
+  expiresAt   DateTime
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  lastActivity DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String?
+  phone       String?
+  source      String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  vehicles    Vehicle[]
+  jobs        Job[]
+}
+
+// Vehicle Model
+model Vehicle {
+  id            Int      @id @default(autoincrement())
+  customer_id   Int
+  make          String
+  model         String
+  year          Int
+  license_plate String
+  engine_cc     Float
+  power_kw      Int
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  customer      Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  jobs          Job[]
+}
+
+// Job Model (Repair Job)
+model Job {
+  id              Int      @id @default(autoincrement())
+  vehicle_id      Int
+  customer_id     Int
+  mechanic_id     Int?
+  status          String
+  repair_type     String
+  complaint_notes String?
+  diagnosis_notes String?
+  labor_cost      Float
+  parts_cost      Float
+  total_cost      Float
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  
+  vehicle         Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  customer        Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  mechanic        User?    @relation(fields: [mechanic_id], references: [id], onDelete: SetNull)
+  parts_used      Part[]
+}
+
+// Parts Model (Parts used in repairs)
+model Part {
+  id            Int      @id @default(autoincrement())
+  job_id        Int
+  part_name     String
+  supplier_name String?
+  sku           String?
+  qty           Int
+  buy_price     Float
+  sell_price    Float
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  job           Job      @relation(fields: [job_id], references: [id], onDelete: Cascade)
+}

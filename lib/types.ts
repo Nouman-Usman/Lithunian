@@ -56,8 +56,9 @@ export interface Customer {
 export type Role = "admin" | "mechanic"
 
 export interface AuthUser {
+  id: number
   username: string
-  name: string
+  name: string | null
   role: Role
 }
 

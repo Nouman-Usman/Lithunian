@@ -2,16 +2,16 @@
 
 import type React from "react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 
 export function LoginCard() {
-  const { login } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -19,16 +19,44 @@ export function LoginCard() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const ok = await login(username.trim(), password)
-    setLoading(false)
-    if (!ok) {
+    
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: username.trim(), password }),
+      })
+
+      if (!response.ok) {
+        toast({
+          title: "Invalid credentials",
+          description: "Please check your username/password.",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
+      }
+
+      const data = await response.json()
+      toast({ title: "Welcome back" })
+
+      // Role-based redirect using the response data
+      if (data.user.role === "admin") {
+        router.push("/admin/dashboard")
+      } else if (data.user.role === "mechanic") {
+        router.push("/mechanic/dashboard")
+      } else {
+        router.push("/")
+      }
+    } catch (error) {
       toast({
-        title: "Invalid credentials",
-        description: "Please check your username/password.",
+        title: "Error",
+        description: "An error occurred during login.",
         variant: "destructive",
       })
-    } else {
-      toast({ title: "Welcome back" })
+    } finally {
+      setLoading(false)
     }
   }
 

@@ -6,48 +6,84 @@ import type { AuthUser, Role } from "@/lib/types"
 interface AuthContextValue {
   currentUser: AuthUser | null
   login: (username: string, password: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
+  isLoading: boolean
+  isSessionValid: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-const DUMMY_USERS: Array<{ username: string; password: string; name: string; role: Role }> = [
-  { username: "admin", password: "admin123", name: "Office Manager", role: "admin" },
-  { username: "mechanic", password: "mechanic123", name: "John Smith", role: "mechanic" },
-]
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSessionValid, setIsSessionValid] = useState(false)
 
+  // Verify session on mount
   useEffect(() => {
-    const raw = localStorage.getItem("garage-os-auth")
-    if (raw) {
+    const verifySession = async () => {
       try {
-        const parsed = JSON.parse(raw) as AuthUser
-        setCurrentUser(parsed)
+        const response = await fetch("/api/auth/session", {
+          credentials: "include",
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentUser(data.user)
+          setIsSessionValid(true)
+        } else {
+          setCurrentUser(null)
+          setIsSessionValid(false)
+        }
       } catch {
-        // ignore
+        setCurrentUser(null)
+        setIsSessionValid(false)
+      } finally {
+        setIsLoading(false)
       }
     }
+
+    verifySession()
   }, [])
 
-  useEffect(() => {
-    if (currentUser) localStorage.setItem("garage-os-auth", JSON.stringify(currentUser))
-    else localStorage.removeItem("garage-os-auth")
-  }, [currentUser])
-
   async function login(username: string, password: string) {
-    const match = DUMMY_USERS.find((u) => u.username === username && u.password === password)
-    if (!match) return false
-    setCurrentUser({ username: match.username, name: match.name, role: match.role })
-    return true
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username, password }),
+      })
+
+      if (!response.ok) return false
+
+      const data = await response.json()
+      setCurrentUser(data.user)
+      setIsSessionValid(true)
+      return true
+    } catch {
+      return false
+    }
   }
 
-  function logout() {
-    setCurrentUser(null)
+  async function logout() {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+    } catch (error) {
+      console.error("Logout error:", error)
+    } finally {
+      setCurrentUser(null)
+      setIsSessionValid(false)
+    }
   }
 
-  const value = useMemo(() => ({ currentUser, login, logout }), [currentUser])
+  const value = useMemo(
+    () => ({ currentUser, login, logout, isLoading, isSessionValid }),
+    [currentUser, isLoading, isSessionValid]
+  )
+  
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
