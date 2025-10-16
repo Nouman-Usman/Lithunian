@@ -1,0 +1,158 @@
+import type { Customer, Appointment } from "./types"
+
+export const customers: Customer[] = [
+  {
+    id: "c1",
+    name: "Alice Johnson",
+    phone: "+1 (234) 567-8901",
+    email: "alice.j@example.com",
+    vehicles: [
+      { licensePlate: "ABC123", manufacturer: "Toyota", model: "Camry", year: 2018 },
+      { licensePlate: "ALC555", manufacturer: "Toyota", model: "RAV4", year: 2021 },
+    ],
+    lastVisit: new Date().toISOString(),
+    lifetimeJobs: 6,
+    lifetimeRevenue: 2450,
+    status: "Old",
+  },
+  {
+    id: "c2",
+    name: "Bob Williams",
+    phone: "+1 (987) 654-3210",
+    email: "bob.w@example.com",
+    vehicles: [{ licensePlate: "XYZ789", manufacturer: "Honda", model: "Civic", year: 2020 }],
+    lastVisit: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    lifetimeJobs: 3,
+    lifetimeRevenue: 980,
+    status: "Old",
+  },
+  {
+    id: "c3",
+    name: "Carmen Rivera",
+    phone: "+1 (555) 010-2020",
+    email: "carmen.r@example.com",
+    vehicles: [{ licensePlate: "CRV222", manufacturer: "Ford", model: "Focus", year: 2017 }],
+    lastVisit: new Date(Date.now() - 1000 * 60 * 60 * 24 * 40).toISOString(),
+    lifetimeJobs: 1,
+    lifetimeRevenue: 220,
+    status: "New",
+  },
+  {
+    id: "c4",
+    name: "Daniel Kim",
+    phone: "+1 (555) 999-1111",
+    email: "dan.k@example.com",
+    vehicles: [{ licensePlate: "DKM321", manufacturer: "Hyundai", model: "Elantra", year: 2019 }],
+    lastVisit: new Date(Date.now() - 1000 * 60 * 60 * 24 * 75).toISOString(),
+    lifetimeJobs: 2,
+    lifetimeRevenue: 610,
+    status: "Old",
+  },
+  {
+    id: "c5",
+    name: "Sara Chen",
+    phone: "+1 (555) 000-8888",
+    email: "sara.c@example.com",
+    vehicles: [
+      { licensePlate: "SCH777", manufacturer: "BMW", model: "3 Series", year: 2016 },
+      { licensePlate: "SCH778", manufacturer: "BMW", model: "X3", year: 2020 },
+    ],
+    lastVisit: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    lifetimeJobs: 5,
+    lifetimeRevenue: 3240,
+    status: "Old",
+  },
+  {
+    id: "c6",
+    name: "Ethan Patel",
+    phone: "+1 (555) 101-2020",
+    email: "ethan.p@example.com",
+    vehicles: [{ licensePlate: "ETH101", manufacturer: "Nissan", model: "Altima", year: 2015 }],
+    lastVisit: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+    lifetimeJobs: 1,
+    lifetimeRevenue: 180,
+    status: "New",
+  },
+]
+
+export const monthlyRevenue: { month: string; revenue: number; cost: number }[] = [
+  { month: "Jan", revenue: 1800, cost: 950 },
+  { month: "Feb", revenue: 2200, cost: 1120 },
+  { month: "Mar", revenue: 2600, cost: 1410 },
+  { month: "Apr", revenue: 2400, cost: 1280 },
+  { month: "May", revenue: 3000, cost: 1620 },
+  { month: "Jun", revenue: 3200, cost: 1710 },
+  { month: "Jul", revenue: 2900, cost: 1500 },
+  { month: "Aug", revenue: 3100, cost: 1590 },
+  { month: "Sep", revenue: 2700, cost: 1470 },
+  { month: "Oct", revenue: 3300, cost: 1750 },
+  { month: "Nov", revenue: 3500, cost: 1810 },
+  { month: "Dec", revenue: 4100, cost: 2120 },
+]
+
+export const demoAppointments: Appointment[] = [
+  {
+    id: "apt-1001",
+    startsAt: new Date(Date.now() + 1000 * 60 * 60).toISOString(), // +1h
+    durationMinutes: 60,
+    status: "Scheduled",
+    customer: { name: "Alice Johnson", phone: "+1 (234) 567-8901", email: "alice.j@example.com" },
+    vehicle: { plate: "ABC123", manufacturer: "Toyota", model: "Camry", year: 2018 },
+    serviceType: "General Inspection",
+    mechanicId: undefined,
+    mechanicName: undefined,
+    notes: "Customer prefers morning slot.",
+  },
+  {
+    id: "apt-1002",
+    startsAt: new Date(Date.now() + 1000 * 60 * 120).toISOString(), // +2h
+    durationMinutes: 45,
+    status: "Confirmed",
+    customer: { name: "Bob Williams", phone: "+1 (987) 654-3210", email: "bob.w@example.com" },
+    vehicle: { plate: "XYZ789", manufacturer: "Honda", model: "Civic", year: 2020 },
+    serviceType: "Oil Change",
+    mechanicId: "mech-1",
+    mechanicName: "John Doe",
+    notes: "Bring synthetic 5W-30",
+  },
+  {
+    id: "apt-1003",
+    startsAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // -2h (past)
+    durationMinutes: 90,
+    status: "Completed",
+    customer: { name: "Carmen Rivera", phone: "+1 (555) 010-2020", email: "carmen.r@example.com" },
+    vehicle: { plate: "CRV222", manufacturer: "Ford", model: "Focus", year: 2017 },
+    serviceType: "Brakes",
+    mechanicId: "mech-2",
+    mechanicName: "Emily Clark",
+  },
+  {
+    id: "apt-1004",
+    startsAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), // +1 day
+    durationMinutes: 60,
+    status: "Scheduled",
+    customer: { name: "Daniel Kim", phone: "+1 (555) 999-1111", email: "dan.k@example.com" },
+    vehicle: { plate: "DKM321", manufacturer: "Hyundai", model: "Elantra", year: 2019 },
+    serviceType: "Electrical",
+  },
+  {
+    id: "apt-1005",
+    startsAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString(), // +3h
+    durationMinutes: 120,
+    status: "Confirmed",
+    customer: { name: "Sara Chen", phone: "+1 (555) 000-8888", email: "sara.c@example.com" },
+    vehicle: { plate: "SCH777", manufacturer: "BMW", model: "3 Series", year: 2016 },
+    serviceType: "Transmission",
+    mechanicId: "mech-3",
+    mechanicName: "Mike Stone",
+  },
+  {
+    id: "apt-1006",
+    startsAt: new Date(Date.now() + 1000 * 60 * 60 * 5).toISOString(), // +5h
+    durationMinutes: 30,
+    status: "No-Show",
+    customer: { name: "Ethan Patel", phone: "+1 (555) 101-2020", email: "ethan.p@example.com" },
+    vehicle: { plate: "ETH101", manufacturer: "Nissan", model: "Altima", year: 2015 },
+    serviceType: "General Inspection",
+  },
+]
