@@ -1334,7 +1334,7 @@ export default function AdminDashboard() {
                 {users
                   .filter((user) => user.role === "mechanic")
                   .map((mechanic) => (
-                    <option key={mechanic.id} value={mechanic.id}>
+                    <option key={mechanic.id} value={mechanic.id.toString()}>
                       {mechanic.name || mechanic.username}
                     </option>
                   ))}

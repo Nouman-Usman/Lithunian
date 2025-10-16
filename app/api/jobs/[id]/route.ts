@@ -78,7 +78,7 @@ export async function GET(
       customerSource: job.customer?.source,
       serviceType: job.repair_type,
       status: job.status,
-      mechanicId: job.mechanic_id,
+      mechanicId: job.mechanic_id ? job.mechanic_id.toString() : "",
       mechanicName: job.mechanic?.name || job.mechanic?.username || "—",
       commentFromOffice: job.complaint_notes,
       commentFromMaster: job.diagnosis_notes,
