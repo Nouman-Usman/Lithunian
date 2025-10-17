@@ -49,16 +49,22 @@ export default function AdminDashboard() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("") 
   const [users, setUsers] = useState<any[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [usersError, setUsersError] = useState("")
   const [showUpdatePasswordDialog, setShowUpdatePasswordDialog] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [newPassword, setNewPassword] = useState("")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [allJobs, setAllJobs] = useState<any[]>([])
+  const [jobsLoading, setJobsLoading] = useState(false)
+  const [jobsError, setJobsError] = useState("")
   const [jobFilter, setJobFilter] = useState("all")
   const [selectedJob, setSelectedJob] = useState<any>(null)
   const [showJobDetail, setShowJobDetail] = useState(false)
   const [showEditJobDialog, setShowEditJobDialog] = useState(false)
   const [allCustomers, setAllCustomers] = useState<any[]>([])
+  const [customersLoading, setCustomersLoading] = useState(false)
+  const [customersError, setCustomersError] = useState("")
   const [editJobForm, setEditJobForm] = useState({
     serviceType: "",
     status: "",
@@ -101,25 +107,43 @@ export default function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
+      setUsersLoading(true)
+      setUsersError("")
       const response = await fetch("/api/users")
       const data = await response.json()
       if (response.ok) {
         setUsers(data.users || [])
+      } else {
+        setUsersError(data.message || "Failed to fetch users")
+        setUsers([])
       }
     } catch (err) {
       console.error("Error fetching users:", err)
+      setUsersError("Failed to fetch users")
+      setUsers([])
+    } finally {
+      setUsersLoading(false)
     }
   }
 
   const fetchAllJobs = async () => {
     try {
+      setJobsLoading(true)
+      setJobsError("")
       const response = await fetch("/api/jobs")
       const data = await response.json()
       if (response.ok) {
         setAllJobs(data.jobs || [])
+      } else {
+        setJobsError(data.message || "Failed to fetch jobs")
+        setAllJobs([])
       }
     } catch (err) {
       console.error("Error fetching jobs:", err)
+      setJobsError("Failed to fetch jobs")
+      setAllJobs([])
+    } finally {
+      setJobsLoading(false)
     }
   }
 
@@ -144,14 +168,22 @@ export default function AdminDashboard() {
 
   const fetchAllCustomers = async () => {
     try {
+      setCustomersLoading(true)
+      setCustomersError("")
       const response = await fetch("/api/customer")
       const data = await response.json()
       if (response.ok) {
         setAllCustomers(data.customers || [])
+      } else {
+        setCustomersError(data.message || "Failed to fetch customers")
+        setAllCustomers([])
       }
     } catch (err) {
       console.error("Error fetching customers:", err)
-      setError("Failed to fetch customers")
+      setCustomersError("Failed to fetch customers")
+      setAllCustomers([])
+    } finally {
+      setCustomersLoading(false)
     }
   }
 
@@ -620,6 +652,40 @@ export default function AdminDashboard() {
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Active Jobs</h2>
             
+            {/* Loading State */}
+            {jobsLoading ? (
+              <Card className="border-gray-200 bg-white">
+                <CardContent className="pt-12 text-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600 text-sm">Loading jobs...</p>
+                </CardContent>
+              </Card>
+            ) : jobsError ? (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6 text-center py-12">
+                  <Briefcase className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                  <p className="text-red-700 text-sm font-medium">Failed to load jobs</p>
+                  <p className="text-red-600 text-xs mt-2">{jobsError}</p>
+                  <Button
+                    onClick={() => fetchAllJobs()}
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 text-red-700 border-red-300 hover:bg-red-100"
+                  >
+                    Try Again
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : allJobs.length === 0 ? (
+              <Card className="border-gray-200 bg-white">
+                <CardContent className="pt-6 text-center py-12">
+                  <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 text-sm">No jobs found</p>
+                  <p className="text-gray-500 text-xs mt-2">Jobs will appear here once you create them</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
             {/* Filter Buttons - Wrap on mobile */}
             <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
               {["all", "active", "in-progress", "repaired"].map((filter) => (
@@ -660,7 +726,7 @@ export default function AdminDashboard() {
               <Card className="border-gray-200 bg-white">
                 <CardContent className="pt-6 text-center py-12">
                   <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 text-sm">No jobs found</p>
+                  <p className="text-gray-600 text-sm">No jobs match the selected filter</p>
                 </CardContent>
               </Card>
             ) : (
@@ -729,78 +795,180 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
+              </>
+            )}
           </div>
         ) : activeMenu === "user-management" ? (
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">User Management</h2>
-            
-            {users.length === 0 ? (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">User Management</h2>
+                <p className="text-xs sm:text-sm text-gray-600">Manage mechanics and admin users</p>
+              </div>
+              <Button
+                onClick={() => {
+                  setShowAddMechanicDialog(true)
+                  setMechanicForm({ username: "", password: "" })
+                }}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                size="sm"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>Add Mechanic</span>
+              </Button>
+            </div>
+
+            {/* Loading State */}
+            {usersLoading ? (
+              <Card className="border-gray-200 bg-white">
+                <CardContent className="pt-12 text-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600 text-sm">Loading mechanics...</p>
+                </CardContent>
+              </Card>
+            ) : usersError ? (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6 text-center py-12">
+                  <Users className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                  <p className="text-red-700 text-sm font-medium">Failed to load mechanics</p>
+                  <p className="text-red-600 text-xs mt-2">{usersError}</p>
+                  <Button
+                    onClick={() => fetchUsers()}
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 text-red-700 border-red-300 hover:bg-red-100"
+                  >
+                    Try Again
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : users.length === 0 ? (
               <Card className="border-gray-200 bg-white">
                 <CardContent className="pt-6 text-center py-12">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 text-sm">No mechanics found</p>
+                  <p className="text-xs text-gray-500 mt-2">Add your first mechanic to get started</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                <table className="w-full text-xs sm:text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-900">Username</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-900">Role</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-900">Name</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-right font-semibold text-gray-900">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 text-gray-900">{user.username}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">
-                          <span className={`inline-block px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
-                            user.role === "admin" 
-                              ? "bg-blue-100 text-blue-700" 
-                              : "bg-gray-100 text-gray-700"
-                          }`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 text-gray-600">{user.name || "—"}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 text-right">
-                          {user.role === "mechanic" && (
-                            <div className="flex justify-end gap-1 sm:gap-2">
-                              <Button
-                                onClick={() => {
-                                  setSelectedUser(user)
-                                  setShowUpdatePasswordDialog(true)
-                                  setNewPassword("")
-                                }}
-                                variant="outline"
-                                size="sm"
-                                className="text-gray-900 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                              >
-                                <span className="hidden sm:inline">Update</span>
-                                <span className="sm:hidden">Upd</span>
-                              </Button>
-                              <Button
-                                onClick={() => {
-                                  setSelectedUser(user)
-                                  setShowDeleteDialog(true)
-                                }}
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                              >
-                                Del
-                              </Button>
-                            </div>
-                          )}
-                        </td>
+              <>
+                {/* Desktop View - Table */}
+                <div className="hidden sm:block overflow-x-auto border border-gray-200 rounded-lg bg-white">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50">
+                        <th className="px-4 py-3 text-left font-semibold text-gray-900">Username</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-900">Name</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-900">Role</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-900">Created</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-900">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-gray-900 font-medium">{user.username}</td>
+                          <td className="px-4 py-3 text-gray-600">{user.name || "—"}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                              user.role === "admin" 
+                                ? "bg-purple-100 text-purple-700" 
+                                : "bg-blue-100 text-blue-700"
+                            }`}>
+                              {user.role === "admin" ? "Admin" : "Mechanic"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-xs">
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {user.role === "mechanic" && (
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  onClick={() => {
+                                    setSelectedUser(user)
+                                    setShowUpdatePasswordDialog(true)
+                                    setNewPassword("")
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-gray-900 text-xs px-3 py-1.5 border-gray-300 hover:bg-gray-100"
+                                >
+                                  Update Password
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    setSelectedUser(user)
+                                    setShowDeleteDialog(true)
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs px-3 py-1.5 border-red-300"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View - Cards */}
+                <div className="sm:hidden space-y-3">
+                  {users.map((user) => (
+                    <Card key={user.id} className="border-gray-200 bg-white">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{user.username}</p>
+                            <p className="text-xs text-gray-600 mt-0.5">{user.name || "No name"}</p>
+                          </div>
+                          <span className={`flex-shrink-0 ml-2 inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === "admin" 
+                              ? "bg-purple-100 text-purple-700" 
+                              : "bg-blue-100 text-blue-700"
+                          }`}>
+                            {user.role === "admin" ? "Admin" : "Mechanic"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Created: {new Date(user.created_at).toLocaleDateString()}
+                        </p>
+                        {user.role === "mechanic" && (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => {
+                                setSelectedUser(user)
+                                setShowUpdatePasswordDialog(true)
+                                setNewPassword("")
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-gray-900 text-xs py-1.5 border-gray-300 hover:bg-gray-100"
+                            >
+                              Update Password
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setSelectedUser(user)
+                                setShowDeleteDialog(true)
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs px-3 py-1.5 border-red-300"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         ) : activeMenu === "customers" ? (
@@ -820,11 +988,36 @@ export default function AdminDashboard() {
               </Button>
             </div>
             
-            {allCustomers.length === 0 ? (
+            {/* Loading State */}
+            {customersLoading ? (
+              <Card className="border-gray-200 bg-white">
+                <CardContent className="pt-12 text-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600 text-sm">Loading customers...</p>
+                </CardContent>
+              </Card>
+            ) : customersError ? (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6 text-center py-12">
+                  <Users className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                  <p className="text-red-700 text-sm font-medium">Failed to load customers</p>
+                  <p className="text-red-600 text-xs mt-2">{customersError}</p>
+                  <Button
+                    onClick={() => fetchAllCustomers()}
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 text-red-700 border-red-300 hover:bg-red-100"
+                  >
+                    Try Again
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : allCustomers.length === 0 ? (
               <Card className="border-gray-200 bg-white">
                 <CardContent className="pt-6 text-center py-12">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 text-sm">No customers found</p>
+                  <p className="text-gray-500 text-xs mt-2">Customers will appear here once you add them</p>
                 </CardContent>
               </Card>
             ) : (

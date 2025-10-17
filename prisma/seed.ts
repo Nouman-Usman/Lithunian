@@ -9,6 +9,7 @@ async function main() {
     await db.job.deleteMany()
     await db.vehicle.deleteMany()
     await db.customer.deleteMany()
+    await db.supplier.deleteMany()
     console.log("✅ Cleared existing data")
 
     // Create Customers
@@ -47,6 +48,76 @@ async function main() {
       ],
     })
     console.log(`✅ Created ${customers.count} customers`)
+
+    // Create Suppliers
+    const suppliers = await db.supplier.createMany({
+      data: [
+        {
+          name: "AutoZone",
+          email: "contact@autozone.com",
+          phone: "+1 (555) 100-0001",
+          address: "123 Auto Street",
+          city: "Detroit",
+          country: "USA",
+          payment_terms: "Net 30",
+        },
+        {
+          name: "Bosch",
+          email: "sales@bosch.com",
+          phone: "+1 (555) 100-0002",
+          address: "456 Parts Avenue",
+          city: "Milwaukee",
+          country: "USA",
+          payment_terms: "Net 45",
+        },
+        {
+          name: "Mobil",
+          email: "sales@mobil.com",
+          phone: "+1 (555) 100-0003",
+          address: "789 Oil Lane",
+          city: "Irving",
+          country: "USA",
+          payment_terms: "Net 30",
+        },
+        {
+          name: "Michelin",
+          email: "b2b@michelin.com",
+          phone: "+1 (555) 100-0004",
+          address: "321 Tire Road",
+          city: "Greenville",
+          country: "USA",
+          payment_terms: "Net 60",
+        },
+        {
+          name: "Mann Filter",
+          email: "sales@mannfilter.com",
+          phone: "+49 (123) 456-7890",
+          address: "654 Filter Street",
+          city: "Ludwigsburg",
+          country: "Germany",
+          payment_terms: "Net 30",
+        },
+        {
+          name: "OEM Parts",
+          email: "oem@oem-parts.com",
+          phone: "+1 (555) 100-0005",
+          address: "987 Original Road",
+          city: "Chicago",
+          country: "USA",
+          payment_terms: "Net 45",
+        },
+        {
+          name: "Optima",
+          email: "sales@optima-batteries.com",
+          phone: "+1 (555) 100-0006",
+          address: "111 Battery Boulevard",
+          city: "San Diego",
+          country: "USA",
+          payment_terms: "Net 30",
+        },
+      ],
+    })
+    console.log(`✅ Created ${suppliers.count} suppliers`)
 
     // Create Vehicles
     const customerIds = await db.customer.findMany({
@@ -202,6 +273,14 @@ async function main() {
     })
     console.log(`✅ Created ${jobs.count} jobs`)
 
+    // Get supplier IDs for mapping
+    const supplierIds = await db.supplier.findMany({
+      select: { id: true, name: true },
+    })
+    const supplierMap = Object.fromEntries(
+      supplierIds.map((s: { name: string; id: number }) => [s.name, s.id])
+    )
+
     // Create Parts for jobs
     const jobIds = await db.job.findMany({
       select: { id: true },
@@ -211,6 +290,7 @@ async function main() {
       data: [
         {
           job_id: jobIds[0].id,
+          supplier_id: supplierMap["AutoZone"],
           part_name: "Oil Filter",
           supplier_name: "AutoZone",
           sku: "OIL-FLT-001",
@@ -220,6 +300,7 @@ async function main() {
         },
         {
           job_id: jobIds[0].id,
+          supplier_id: supplierMap["Mobil"],
           part_name: "Synthetic Oil 5W-30",
           supplier_name: "Mobil",
           sku: "OIL-5W30-5L",
@@ -229,6 +310,7 @@ async function main() {
         },
         {
           job_id: jobIds[1].id,
+          supplier_id: supplierMap["Bosch"],
           part_name: "Front Brake Pads",
           supplier_name: "Bosch",
           sku: "BRAKE-PAD-FRT",
@@ -238,6 +320,7 @@ async function main() {
         },
         {
           job_id: jobIds[2].id,
+          supplier_id: supplierMap["OEM Parts"],
           part_name: "O2 Sensor",
           supplier_name: "OEM",
           sku: "O2-SENSOR-001",
@@ -247,6 +330,7 @@ async function main() {
         },
         {
           job_id: jobIds[3].id,
+          supplier_id: supplierMap["Michelin"],
           part_name: "All-Season Tire",
           supplier_name: "Michelin",
           sku: "TIRE-ALL-SN",
@@ -256,6 +340,7 @@ async function main() {
         },
         {
           job_id: jobIds[4].id,
+          supplier_id: supplierMap["Mann Filter"],
           part_name: "Engine Air Filter",
           supplier_name: "Mann Filter",
           sku: "AIR-FLT-ENG",
@@ -265,6 +350,7 @@ async function main() {
         },
         {
           job_id: jobIds[4].id,
+          supplier_id: supplierMap["Mann Filter"],
           part_name: "Cabin Air Filter",
           supplier_name: "Mann Filter",
           sku: "AIR-FLT-CAB",
@@ -274,6 +360,7 @@ async function main() {
         },
         {
           job_id: jobIds[5].id,
+          supplier_id: supplierMap["Optima"],
           part_name: "Car Battery 12V",
           supplier_name: "Optima",
           sku: "BATT-12V-100",

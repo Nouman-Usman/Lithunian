@@ -50,6 +50,22 @@ model Customer {
   jobs        Job[]
 }
 
+// Supplier Model
+model Supplier {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  country     String?
+  payment_terms String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  parts       Part[]
+}
+
 // Vehicle Model
 model Vehicle {
   id            Int      @id @default(autoincrement())
@@ -93,8 +109,9 @@ model Job {
 model Part {
   id            Int      @id @default(autoincrement())
   job_id        Int
+  supplier_id   Int?
   part_name     String
-  supplier_name String?
+  supplier_name String?  // Legacy field - deprecated, use supplier_id instead
   sku           String?
   qty           Int
   buy_price     Float
@@ -103,4 +120,6 @@ model Part {
   updated_at    DateTime @updatedAt
   
   job           Job      @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  supplier      Supplier? @relation(fields: [supplier_id], references: [id], onDelete: SetNull)
 }
+

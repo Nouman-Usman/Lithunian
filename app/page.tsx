@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
@@ -9,36 +10,21 @@ import { Wrench, CheckCircle, Users, Clock, Zap, Shield, Phone, Mail, MapPin, Ar
 
 export default function HomePage() {
   const router = useRouter()
-  const [isChecking, setIsChecking] = useState(true)
+  const { currentUser, isLoading } = useAuth()
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const response = await fetch("/api/auth/session", {
-          credentials: "include",
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          // User is already logged in, redirect based on role
-          if (data.user.role === "admin") {
-            router.push("/admin/dashboard")
-          } else if (data.user.role === "mechanic") {
-            router.push("/mechanic/dashboard")
-          }
-          // If role is neither admin nor mechanic, stay on landing page
-        }
-      } catch (error) {
-        console.error("Session check error:", error)
-      } finally {
-        setIsChecking(false)
+    // If user is logged in, redirect based on role
+    if (!isLoading && currentUser) {
+      if (currentUser.role === "admin") {
+        router.push("/admin/dashboard")
+      } else if (currentUser.role === "mechanic") {
+        router.push("/mechanic/dashboard")
       }
+      // If role is neither admin nor mechanic, stay on landing page
     }
+  }, [currentUser, isLoading, router])
 
-    checkSession()
-  }, [router])
-
-  if (isChecking) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         <div className="text-center">
