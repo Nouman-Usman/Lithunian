@@ -133,6 +133,7 @@ export async function PUT(
       status,
       mechanic_id,
       complaint_notes,
+      diagnosis_notes,
       labor_cost,
       parts_cost,
       total_cost,
@@ -144,6 +145,7 @@ export async function PUT(
       status === undefined &&
       mechanic_id === undefined &&
       complaint_notes === undefined &&
+      diagnosis_notes === undefined &&
       labor_cost === undefined &&
       parts_cost === undefined &&
       total_cost === undefined
@@ -174,6 +176,7 @@ export async function PUT(
         ...(status !== undefined && { status }),
         ...(mechanic_id !== undefined && { mechanic_id }),
         ...(complaint_notes !== undefined && { complaint_notes }),
+        ...(diagnosis_notes !== undefined && { diagnosis_notes }),
         ...(labor_cost !== undefined && { labor_cost: parseFloat(labor_cost) }),
         ...(parts_cost !== undefined && { parts_cost: parseFloat(parts_cost) }),
         ...(total_cost !== undefined && { total_cost: parseFloat(total_cost) }),

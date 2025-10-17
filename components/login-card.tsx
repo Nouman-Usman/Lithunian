@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 export function LoginCard() {
   const { toast } = useToast()
   const router = useRouter()
+  const { login, refreshSession } = useAuth()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -21,14 +23,10 @@ export function LoginCard() {
     setLoading(true)
     
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ username: username.trim(), password }),
-      })
-
-      if (!response.ok) {
+      // Call the login function from the auth hook
+      const success = await login(username.trim(), password)
+      
+      if (!success) {
         toast({
           title: "Invalid credentials",
           description: "Please check your username/password.",
@@ -38,17 +36,10 @@ export function LoginCard() {
         return
       }
 
-      const data = await response.json()
       toast({ title: "Welcome back" })
 
-      // Role-based redirect using the response data
-      if (data.user.role === "admin") {
-        router.push("/admin/dashboard")
-      } else if (data.user.role === "mechanic") {
-        router.push("/mechanic/dashboard")
-      } else {
-        router.push("/")
-      }
+      // Redirect will be handled by the login page's useEffect
+      // which monitors the currentUser state from the auth context
     } catch (error) {
       toast({
         title: "Error",

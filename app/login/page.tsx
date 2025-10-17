@@ -2,44 +2,28 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 import { LoginCard } from "@/components/login-card"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [isChecking, setIsChecking] = useState(true)
+  const { currentUser, isLoading } = useAuth()
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const response = await fetch("/api/auth/session", {
-          credentials: "include",
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          // User is already logged in, redirect based on role
-          if (data.user.role === "admin") {
-            router.push("/admin/dashboard")
-          } else if (data.user.role === "mechanic") {
-            router.push("/mechanic/dashboard")
-          } else {
-            router.push("/")
-          }
-        } else {
-          // No valid session, show login page
-          setIsChecking(false)
-        }
-      } catch (error) {
-        console.error("Session check error:", error)
-        // If there's an error, show login page
-        setIsChecking(false)
+    // If user is already logged in, redirect based on role
+    if (!isLoading && currentUser) {
+      if (currentUser.role === "admin") {
+        router.push("/admin/dashboard")
+      } else if (currentUser.role === "mechanic") {
+        router.push("/mechanic/dashboard")
+      } else {
+        router.push("/")
       }
     }
+  }, [currentUser, isLoading, router])
 
-    checkSession()
-  }, [router])
-
-  if (isChecking) {
+  // Show loading while checking auth
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="text-center">
@@ -48,6 +32,11 @@ export default function LoginPage() {
         </div>
       </div>
     )
+  }
+
+  // Show login page only if not logged in
+  if (currentUser) {
+    return null
   }
 
   return (

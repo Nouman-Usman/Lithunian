@@ -31,15 +31,14 @@ import {
 
 const menuItems = [
   { id: "active-jobs", label: "Active Jobs", icon: Briefcase },
-  { id: "archived-jobs", label: "Archived Jobs", icon: Archive },
   { id: "customers", label: "Customer List", icon: Users },
   { id: "appointments", label: "My Appointments", icon: Calendar },
-  { id: "reporting", label: "Reporting", icon: BarChart3 },
   { id: "user-management", label: "User Management", icon: Users },
+  { id: "reporting", label: "Reporting", icon: BarChart3 },
 ]
 
 export default function AdminDashboard() {
-  const { currentUser, logout } = useAuth()
+  const { currentUser, logout, isLoading } = useAuth()
   const router = useRouter()
   const [activeMenu, setActiveMenu] = useState("active-jobs")
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -48,7 +47,7 @@ export default function AdminDashboard() {
   const [mechanicForm, setMechanicForm] = useState({ username: "", password: "" })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
+  const [success, setSuccess] = useState("") 
   const [users, setUsers] = useState<any[]>([])
   const [showUpdatePasswordDialog, setShowUpdatePasswordDialog] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
@@ -69,18 +68,36 @@ export default function AdminDashboard() {
     laborCost: "",
     partsCost: "",
   })
+  const [showAddJobDialog, setShowAddJobDialog] = useState(false)
+  const [addJobForm, setAddJobForm] = useState({
+    customerId: "",
+    vehicleId: "",
+    repairType: "",
+    complaintNotes: "",
+    mechanicId: "",
+  })
+  const [selectedCustomerVehicles, setSelectedCustomerVehicles] = useState<any[]>([])
 
+
+  // Check authentication on mount
   useEffect(() => {
-    if (!currentUser) {
+    if (!isLoading && !currentUser) {
       router.push("/login")
-    } else if (activeMenu === "user-management") {
+    }
+  }, [currentUser, isLoading, router])
+
+  // Fetch data based on active menu
+  useEffect(() => {
+    if (!currentUser) return
+
+    if (activeMenu === "user-management") {
       fetchUsers()
     } else if (activeMenu === "active-jobs") {
       fetchAllJobs()
     } else if (activeMenu === "customers") {
       fetchAllCustomers()
     }
-  }, [currentUser, router, activeMenu])
+  }, [activeMenu])
 
   const fetchUsers = async () => {
     try {
@@ -136,6 +153,37 @@ export default function AdminDashboard() {
       console.error("Error fetching customers:", err)
       setError("Failed to fetch customers")
     }
+  }
+
+  const fetchCustomerVehicles = async (customerId: string) => {
+    try {
+      const response = await fetch(`/api/customer/vehicles?customerId=${customerId}`)
+      const data = await response.json()
+      if (response.ok) {
+        setSelectedCustomerVehicles(data.vehicles || [])
+      }
+    } catch (err) {
+      console.error("Error fetching customer vehicles:", err)
+      setSelectedCustomerVehicles([])
+    }
+  }
+
+  const getCustomerVehicles = (customerId: string) => {
+    const customer = allCustomers.find(c => c.id === parseInt(customerId))
+    if (!customer || !customer.vehicles) return []
+    // Parse vehicles string like "Honda Civic (ABC-123), Toyota Camry (XYZ-789)"
+    return customer.vehicles.split(", ").map((v: string) => {
+      const match = v.match(/(.+)\s\((.+)\)/)
+      if (match) {
+        return {
+          make: match[1].split(" ")[0],
+          model: match[1].substring(match[1].split(" ")[0].length).trim(),
+          licensePlate: match[2],
+          display: v,
+        }
+      }
+      return null
+    }).filter(Boolean)
   }
 
   const exportCustomersToCSV = () => {
@@ -345,12 +393,88 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleAddJob = async () => {
+    setError("")
+    setSuccess("")
+
+    // Validation
+    if (!addJobForm.customerId.trim()) {
+      setError("Customer is required")
+      return
+    }
+    if (!addJobForm.vehicleId.trim()) {
+      setError("Vehicle is required")
+      return
+    }
+    if (!addJobForm.repairType.trim()) {
+      setError("Service type is required")
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/jobs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerId: parseInt(addJobForm.customerId),
+          vehicleId: parseInt(addJobForm.vehicleId),
+          repairType: addJobForm.repairType,
+          complaintNotes: addJobForm.complaintNotes || null,
+          mechanicId: addJobForm.mechanicId ? parseInt(addJobForm.mechanicId) : null,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.message || "Failed to create job")
+        return
+      }
+
+      setSuccess("Job created successfully!")
+      setAddJobForm({
+        customerId: "",
+        vehicleId: "",
+        repairType: "",
+        complaintNotes: "",
+        mechanicId: "",
+      })
+
+      // Close dialog after success
+      setTimeout(() => {
+        setShowAddJobDialog(false)
+        setSuccess("")
+        fetchAllJobs()
+      }, 1500)
+    } catch (err) {
+      setError("An error occurred while creating the job")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && (
+        <>
       {/* Header */}
       <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
         <div className="w-full px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
-          {/* Navbar Container */}
           <div className="flex items-center justify-between gap-3">
             {/* Left Section - Logo */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -381,7 +505,15 @@ export default function AdminDashboard() {
               </Button>
 
               <Button
-                onClick={() => {}}
+                onClick={() => {
+                  setShowAddJobDialog(true)
+                  if (allCustomers.length === 0) {
+                    fetchAllCustomers()
+                  }
+                  if (users.length === 0) {
+                    fetchUsers()
+                  }
+                }}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:px-3"
@@ -1467,6 +1599,176 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Job Dialog */}
+      <Dialog open={showAddJobDialog} onOpenChange={setShowAddJobDialog}>
+        <DialogContent className="w-full sm:max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-gray-900">Create New Job</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Add a new job for a customer's vehicle
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">{success}</p>
+              </div>
+            )}
+
+            {/* Customer Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="customerId" className="text-sm text-gray-700">
+                Customer <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="customerId"
+                value={addJobForm.customerId}
+                onChange={(e) => {
+                  setAddJobForm({ ...addJobForm, customerId: e.target.value, vehicleId: "" })
+                  if (e.target.value) {
+                    fetchCustomerVehicles(e.target.value)
+                  } else {
+                    setSelectedCustomerVehicles([])
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+              >
+                <option value="">Select Customer</option>
+                {allCustomers.map((customer) => (
+                  <option key={customer.id} value={customer.id.toString()}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Vehicle Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="vehicleId" className="text-sm text-gray-700">
+                Vehicle <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="vehicleId"
+                value={addJobForm.vehicleId}
+                onChange={(e) => setAddJobForm({ ...addJobForm, vehicleId: e.target.value })}
+                disabled={!addJobForm.customerId}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                <option value="">Select Vehicle</option>
+                {selectedCustomerVehicles.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id.toString()}>
+                    {vehicle.display}
+                  </option>
+                ))}
+              </select>
+              {!addJobForm.customerId && (
+                <p className="text-xs text-gray-500">Select a customer first</p>
+              )}
+            </div>
+
+            {/* Service Type */}
+            <div className="space-y-2">
+              <Label htmlFor="repairType" className="text-sm text-gray-700">
+                Service Type <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="repairType"
+                value={addJobForm.repairType}
+                onChange={(e) => setAddJobForm({ ...addJobForm, repairType: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+              >
+                <option value="">Select Service Type</option>
+                <option value="General Inspection">General Inspection</option>
+                <option value="Oil Change">Oil Change</option>
+                <option value="Brakes">Brakes</option>
+                <option value="Transmission">Transmission</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Bodywork">Bodywork</option>
+                <option value="Suspension">Suspension</option>
+                <option value="Cooling System">Cooling System</option>
+                <option value="Fuel System">Fuel System</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            {/* Mechanic Assignment (Optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="mechanicId" className="text-sm text-gray-700">
+                Assigned Mechanic (Optional)
+              </Label>
+              <select
+                id="mechanicId"
+                value={addJobForm.mechanicId}
+                onChange={(e) => setAddJobForm({ ...addJobForm, mechanicId: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+              >
+                <option value="">Unassigned</option>
+                {users
+                  .filter((user) => user.role === "mechanic")
+                  .map((mechanic) => (
+                    <option key={mechanic.id} value={mechanic.id.toString()}>
+                      {mechanic.name || mechanic.username}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Initial Complaint Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="complaintNotes" className="text-sm text-gray-700">
+                Initial Complaint / Notes
+              </Label>
+              <textarea
+                id="complaintNotes"
+                value={addJobForm.complaintNotes}
+                onChange={(e) => setAddJobForm({ ...addJobForm, complaintNotes: e.target.value })}
+                placeholder="Enter customer's complaint or initial notes about the job..."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end pt-4 border-t border-gray-200">
+            <Button
+              onClick={() => {
+                setShowAddJobDialog(false)
+                setAddJobForm({
+                  customerId: "",
+                  vehicleId: "",
+                  repairType: "",
+                  complaintNotes: "",
+                  mechanicId: "",
+                })
+                setError("")
+                setSuccess("")
+              }}
+              variant="outline"
+              disabled={loading}
+              className="text-gray-900"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddJob}
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {loading ? "Creating..." : "Create Job"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+        </>
+      )}
     </div>
   )
 }
+

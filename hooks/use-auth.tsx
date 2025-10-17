@@ -9,6 +9,7 @@ interface AuthContextValue {
   logout: () => Promise<void>
   isLoading: boolean
   isSessionValid: boolean
+  refreshSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -79,8 +80,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function refreshSession() {
+    try {
+      const response = await fetch("/api/auth/session", {
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentUser(data.user)
+        setIsSessionValid(true)
+      } else {
+        setCurrentUser(null)
+        setIsSessionValid(false)
+      }
+    } catch {
+      setCurrentUser(null)
+      setIsSessionValid(false)
+    }
+  }
+
   const value = useMemo(
-    () => ({ currentUser, login, logout, isLoading, isSessionValid }),
+    () => ({ currentUser, login, logout, isLoading, isSessionValid, refreshSession }),
     [currentUser, isLoading, isSessionValid]
   )
   
